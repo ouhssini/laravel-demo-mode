@@ -1,56 +1,36 @@
 # Laravel Demo Mode
 
-A lightweight Laravel package that enables a read-only demo environment, provides a reusable Blade banner component, shares optional demo information with Inertia, and blocks modifying HTTP requests.
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/ouhssini/laravel-demo-mode.svg?style=flat-square)](https://packagist.org/packages/ouhssini/laravel-demo-mode)
+[![Total Downloads](https://img.shields.io/packagist/dt/ouhssini/laravel-demo-mode.svg?style=flat-square)](https://packagist.org/packages/ouhssini/laravel-demo-mode)
+[![License](https://img.shields.io/packagist/l/ouhssini/laravel-demo-mode.svg?style=flat-square)](LICENSE)
+
+A lightweight Laravel package that enables a read-only demo environment, provides an optional Blade banner component, shares demo information with Inertia when available, and blocks modifying HTTP requests.
+
+- **Packagist:** <https://packagist.org/packages/ouhssini/laravel-demo-mode>
+- **GitHub:** <https://github.com/ouhssini/laravel-demo-mode>
 
 ## Requirements
 
-- PHP 8.2+
-- Laravel 11, 12, or 13
-- Optional: Inertia.js (only needed for the `demoMode` shared page prop)
+- PHP 8.2 or later for Laravel 11 and 12.
+- PHP 8.3 or later for Laravel 13.
+- Laravel 11, 12, or 13.
+- Inertia.js is optional. It is only needed if you want to consume the `demoMode` shared page prop.
 
 ## Installation
 
-### Install from a local folder
-
-Place the package in your Laravel project, for example:
-
-```text
-packages/ouhssini/laravel-demo-mode
-```
-
-Add the local path repository to your application's root `composer.json`:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "packages/ouhssini/laravel-demo-mode",
-            "options": {
-                "symlink": true
-            }
-        }
-    ]
-}
-```
-
-Install the local development version:
+Install the stable package directly from Packagist:
 
 ```bash
-composer require "ouhssini/laravel-demo-mode:@dev"
+composer require ouhssini/laravel-demo-mode
 ```
 
-The package service provider is registered through Laravel package auto-discovery. It registers the global middleware and the Blade component automatically.
+Laravel package auto-discovery registers the service provider. The package automatically registers its global middleware and the `<x-demo-mode-banner />` Blade component.
 
-### Publish configuration (optional)
+No manual service-provider registration or local path repository is required.
 
-The package works with its default configuration. Publish it if you want to customize allowed paths or response behavior:
+## Enable demo mode
 
-```bash
-php artisan vendor:publish --tag=demo-mode-config
-```
-
-Enable demo mode in `.env`:
+Add the following to your application's `.env` file:
 
 ```env
 DEMO_MODE=true
@@ -58,17 +38,21 @@ DEMO_MODE_BANNER_TITLE="DEMO ENVIRONMENT"
 DEMO_MODE_BANNER_MESSAGE="Read-only access — modifications are disabled."
 ```
 
-Clear cached configuration after changing environment/configuration values:
+Demo mode is disabled by default. To disable it, set:
+
+```env
+DEMO_MODE=false
+```
+
+After changing environment or configuration values, clear cached configuration:
 
 ```bash
 php artisan optimize:clear
 ```
 
-Disable demo mode with `DEMO_MODE=false`.
-
 ## Add the banner to Blade
 
-Add the component once in your main `resources/views/app.blade.php`, inside the `<body>` and before the Inertia root element:
+The banner is opt-in. Add the component once to your main Blade root view, usually `resources/views/app.blade.php`, inside the `<body>` and before the Inertia root element:
 
 ```blade
 <body class="font-sans antialiased">
@@ -78,67 +62,65 @@ Add the component once in your main `resources/views/app.blade.php`, inside the 
 </body>
 ```
 
+If your application uses a different Inertia root element, keep your existing root element and place `<x-demo-mode-banner />` before it.
+
 The component:
 
-- Renders only when `DEMO_MODE=true`.
-- Is fixed to the top of the viewport with a very high stacking order.
-- Adds its own spacer so page content is not hidden underneath it.
+- Renders nothing when `DEMO_MODE` is disabled.
+- Displays a responsive banner at the top of the page when demo mode is enabled.
 - Uses the configured title and message.
-- Supports applications that use `html.dark` for dark mode.
-- Does not require React, JavaScript, Tailwind scanning, or extra frontend dependencies.
+- Supports applications that apply dark mode through `html.dark`.
+- Includes its own styles and does not require React, JavaScript, Tailwind scanning, or extra frontend dependencies.
 
-The component is intentionally opt-in: add `<x-demo-mode-banner />` to the application's root Blade view wherever you want the banner to appear.
+The component uses sticky positioning, so it remains in the document flow and does not need a separate spacer element.
 
 ### Customize the banner view (optional)
 
-Publish the component view:
+Publish the package's Blade views:
 
 ```bash
 php artisan vendor:publish --tag=demo-mode-views
 ```
 
-The published view will be placed at:
+The banner view will be published to:
 
 ```text
 resources/views/vendor/demo-mode/components/banner.blade.php
 ```
 
-Laravel will use the published view instead of the package view, so you can customize its markup and styling without editing `vendor/` files.
+Laravel will use the published view, allowing you to customize its markup and styling without editing files in `vendor/`.
 
-## Protection behavior
+## Publish configuration (optional)
 
-When demo mode is enabled:
+The package works with its default configuration. Publish the configuration file if you want to customize allowed paths, allowed route names, or blocked-request responses:
 
-- `GET`, `HEAD`, and `OPTIONS` requests are allowed.
-- Other HTTP methods, including `POST`, `PUT`, `PATCH`, and `DELETE`, are blocked by default.
-- Requests matching configured allowed paths or route names are allowed.
-- JSON requests receive a JSON error response; browser requests receive the configured HTTP error.
-- The middleware runs globally and therefore covers web and API HTTP requests.
-
-Example blocked JSON response:
-
-```json
-{
-    "message": "Demo mode is enabled. Changes are not allowed.",
-    "demo_mode": true
-}
+```bash
+php artisan vendor:publish --tag=demo-mode-config
 ```
 
-## Configuration
+This creates:
 
-`config/demo-mode.php`:
+```text
+config/demo-mode.php
+```
 
-| Key | Purpose |
+### Configuration options
+
+| Key | Description |
 | --- | --- |
-| `enabled` | Enables/disables demo mode using `DEMO_MODE`. |
+| `enabled` | Enables or disables demo mode. Defaults to the `DEMO_MODE` environment variable, which defaults to `false`. |
 | `banner.title` | Banner heading. |
 | `banner.message` | Banner description. |
 | `allowed_paths` | Request path patterns exempt from write blocking. |
-| `allowed_routes` | Route names exempt from write blocking when the route is resolved. |
-| `response.status` | HTTP status returned for blocked requests. |
+| `allowed_routes` | Route names exempt from write blocking when a route is available to the middleware. |
+| `response.status` | HTTP status returned for blocked requests. Defaults to `403`. |
 | `response.message` | Error message returned for blocked requests. |
 
-### Allow another path
+### Allow specific paths
+
+By default, the package allows the `login` and `logout` paths so users can authenticate and leave the demo environment.
+
+You can add paths in `config/demo-mode.php`:
 
 ```php
 'allowed_paths' => [
@@ -148,11 +130,36 @@ Example blocked JSON response:
 ],
 ```
 
-Use exceptions carefully: any modifying request matching an allowed path will pass through. For global middleware, path exceptions are the reliable option because route names may not yet be available when global middleware executes.
+Path patterns use Laravel's request path matching. For example, `webhooks/*` can allow a group of matching paths.
+
+**Use exceptions carefully:** modifying requests matching an allowed path will pass through the demo-mode protection. Since the package middleware is registered globally, path exceptions are the recommended and most reliable way to allow requests. A route name may not yet be available when global middleware runs.
+
+## Protection behavior
+
+When demo mode is enabled:
+
+- `GET`, `HEAD`, and `OPTIONS` requests are allowed.
+- Other HTTP methods, including `POST`, `PUT`, `PATCH`, and `DELETE`, are blocked by default.
+- Requests matching configured allowed paths are allowed.
+- Configured allowed route names are checked when a route name is available.
+- Requests expecting JSON receive a JSON error response.
+- Other requests receive the configured HTTP error response.
+- The middleware is registered globally, so it protects HTTP requests across the application's web and API routes.
+
+Example JSON response for a blocked request:
+
+```json
+{
+    "message": "Demo mode is enabled. Changes are not allowed.",
+    "demo_mode": true
+}
+```
+
+The default response status is `403 Forbidden`.
 
 ## Inertia shared props
 
-If Inertia is installed, the middleware also shares this prop while demo mode is enabled:
+If Inertia is installed, the middleware shares a `demoMode` prop while demo mode is enabled:
 
 ```ts
 {
@@ -164,14 +171,24 @@ If Inertia is installed, the middleware also shares this prop while demo mode is
 }
 ```
 
-The Blade banner does not depend on this prop. You can use `demoMode.enabled` separately to disable or hide frontend mutation controls for a better read-only user experience. Server-side middleware remains the enforcement layer.
+The Blade banner does not depend on this prop. You can use `demoMode.enabled` in your React components to hide or disable create, edit, and delete controls for a clearer read-only user experience.
+
+Frontend controls are only a usability improvement. The server-side middleware is the enforcement layer and must remain enabled.
 
 ## Important limitations
 
-This package blocks modifying HTTP requests. It does not prevent writes performed outside HTTP requests, such as queued jobs, scheduled tasks, Artisan commands, direct database access, or internal service calls. Protect those separately if they can run against your demo database.
+This package blocks modifying HTTP requests. It does not prevent writes performed outside the HTTP request lifecycle, including:
 
-It does not provide database snapshot/reset isolation, tenant isolation, or automatic data restoration.
+- Queued jobs and background workers.
+- Scheduled tasks.
+- Artisan commands.
+- Direct database access.
+- Internal service calls.
+
+Protect those execution paths separately if they can write to your demo database.
+
+The package does not provide database snapshot/reset isolation, tenant isolation, or automatic data restoration.
 
 ## License
 
-MIT
+This package is open-sourced software licensed under the [MIT license](LICENSE).
