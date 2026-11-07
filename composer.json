@@ -1,6 +1,6 @@
 {
     "name": "ouhssini/laravel-demo-mode",
-    "description": "A lightweight demo mode package for Laravel applications with Inertia support.",
+    "description": "A lightweight demo mode package for Laravel applications with Inertia support and global Blade toast notifications.",
     "type": "library",
     "license": "MIT",
     "require": {

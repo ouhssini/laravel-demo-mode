@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ouhssini\DemoMode\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Ouhssini\DemoMode\Support\FlashNotificationResolver;
 use Symfony\Component\HttpFoundation\Response;
 
 class DemoModeMiddleware
@@ -13,11 +16,13 @@ class DemoModeMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Share normal application flash messages even when demo mode is off.
+        // This allows the Blade component to act as a global toast renderer.
+        $this->shareInertiaProps($request);
+
         if (! config('demo-mode.enabled', false)) {
             return $next($request);
         }
-
-        $this->shareInertiaProps($request);
 
         if (in_array($request->method(), self::SAFE_METHODS, true)) {
             return $next($request);
@@ -31,7 +36,8 @@ class DemoModeMiddleware
     }
 
     /**
-     * Share demo information and flash notifications with Inertia.
+     * Share normalized flash notifications with Inertia without replacing the
+     * application's own `flash` prop or requiring a specific flash convention.
      */
     private function shareInertiaProps(Request $request): void
     {
@@ -39,20 +45,28 @@ class DemoModeMiddleware
             return;
         }
 
-       Inertia::share('demoMode', fn () => [
-    'enabled' => true,
-    'display' => config('demo-mode.display', 'both'),
-    'title' => config('demo-mode.banner.title'),
-    'message' => config('demo-mode.banner.message'),
+        Inertia::share('demoModeNotifications', function () use ($request): array {
+            if (! $request->hasSession()) {
+                return [];
+            }
 
-    'notice' => in_array(
-        config('demo-mode.display', 'both'),
-        ['toast', 'both'],
-        true
-    ) && $request->hasSession()
-        ? $request->session()->get('demo_mode_notice')
-        : null,
-]);
+            return app(FlashNotificationResolver::class)
+                ->resolve($request->session());
+        });
+
+        if (! config('demo-mode.enabled', false)) {
+            return;
+        }
+
+        Inertia::share('demoMode', fn () => [
+            'enabled' => true,
+            'display' => config('demo-mode.display', 'both'),
+            'title' => config('demo-mode.banner.title'),
+            'message' => config('demo-mode.banner.message'),
+            'notice' => $request->hasSession()
+                ? $request->session()->get('demo_mode_notice')
+                : null,
+        ]);
     }
 
     /**

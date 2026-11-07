@@ -17,7 +17,10 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 - Configurable JSON response status and message.
 - Browser and Inertia redirects with flash notifications.
 - Three notification display modes: banner, toast, or both.
-- Optional Inertia shared props.
+- Global Blade toast renderer for common Laravel flash-message conventions.
+- Supports `success`, `error`, `notice`, `warning`, and `info` notifications.
+- Supports both direct flash keys and nested `flash` arrays.
+- Optional Inertia shared props for toast notifications during client-side navigation.
 - Self-contained Blade component with its own CSS and JavaScript.
 - Laravel package auto-discovery.
 
@@ -26,7 +29,7 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 - PHP 8.2 or later for Laravel 11 and 12.
 - PHP 8.3 or later for Laravel 13.
 - Laravel 11, 12, or 13.
-- Inertia.js is optional. It is only needed if you want to consume the `demoMode` shared page prop and use Inertia-related toast notifications.
+- Inertia.js is optional. It is only needed if you want the package to expose demo-mode state and flash notifications during Inertia client-side navigation.
 
 ## Installation
 
@@ -105,7 +108,7 @@ The banner communicates that the application is running in demo mode. Toast noti
 
 ## Add the Blade component
 
-The notification component is opt-in. Add it once to your main Blade root view, usually `resources/views/app.blade.php`, inside the `<body>` element and before the Inertia root element:
+The notification component is opt-in. Add it once to your main Blade root view, usually `resources/views/app.blade.php`, inside the `<body>` element and before the Inertia root element. This is the only component you need to add; you do not need to change controllers, existing flash calls, React components, or toast libraries:
 
 ```blade
 <body class="font-sans antialiased">
@@ -119,8 +122,9 @@ If your application uses a different Inertia root element, keep your existing ro
 
 The component:
 
-- Renders nothing when demo mode is disabled.
-- Displays the persistent banner according to `DEMO_MODE_DISPLAY`.
+- Displays the persistent banner only when demo mode is enabled and the display mode includes `banner`.
+- Acts as a global toast renderer when the display mode includes `toast`, including when demo mode itself is disabled.
+- Automatically reads common Laravel session flash notifications without requiring changes to your existing controllers.
 - Displays toast notifications according to `DEMO_MODE_DISPLAY`.
 - Uses the configured banner title and message.
 - Supports applications that apply dark mode through `html.dark`.
@@ -128,6 +132,39 @@ The component:
 - Does not require React, Sonner, Tailwind CSS scanning, or additional frontend dependencies.
 
 The banner uses sticky positioning, so it remains in the document flow and does not need a separate spacer element.
+
+### Automatic flash notification detection
+
+The Blade component automatically detects these common Laravel conventions:
+
+```php
+return back()->with('success', 'Your changes were saved.');
+return back()->with('error', 'Something went wrong.');
+return back()->with('notice', 'Please note this information.');
+return back()->with('warning', 'Please review this action.');
+```
+
+It also supports applications that store notifications under a `flash` key:
+
+```php
+return back()->with('flash', [
+    'error' => 'Something went wrong.',
+]);
+```
+
+And structured notifications:
+
+```php
+return back()->with('flash', [
+    'type' => 'success',
+    'title' => 'Order saved',
+    'message' => 'Your order was saved successfully.',
+]);
+```
+
+Supported notification types are `success`, `error`, `notice`, `warning`, and `info`. Existing flash conventions are preserved: the package reads and normalizes them but does not replace your application's `flash` session key or require you to change your controllers.
+
+For Inertia client-side navigation, the package shares a separate `demoModeNotifications` prop internally. The Blade component listens for Inertia navigation and renders the same notifications. Your existing `flash` prop and frontend notification implementation are not overwritten.
 
 ### Customize the Blade view (optional)
 
@@ -232,7 +269,7 @@ API and JSON requests receive the configured JSON error response rather than a b
 
 ## Inertia shared props
 
-If Inertia is installed, the middleware shares a `demoMode` prop while demo mode is enabled:
+If Inertia is installed, the middleware shares a `demoMode` prop while demo mode is enabled and a separate `demoModeNotifications` prop for the Blade toast renderer. These props are package-managed; you do not need to add or rename any flash keys in your application:
 
 ```ts
 {
@@ -248,7 +285,7 @@ If Inertia is installed, the middleware shares a `demoMode` prop while demo mode
 
 The `display` value reflects the configured notification mode.
 
-The `notice` property contains the flash notification for a blocked action when toast notifications are enabled. It is `null` when there is no notification to display.
+The legacy `notice` property contains the flash notification for a blocked demo-mode action. The separate `demoModeNotifications` prop contains normalized notifications detected from the common session flash conventions. The package does not replace an application's existing `flash` shared prop.
 
 You can use `demoMode.enabled` in your React components to hide or disable create, edit, and delete controls for a clearer read-only user experience.
 

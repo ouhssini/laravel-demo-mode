@@ -5,11 +5,8 @@ declare(strict_types=1);
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Ouhssini\DemoMode\Http\Middleware\DemoModeMiddleware;
-use Ouhssini\DemoMode\Tests\TestCase;
 
-
-
-it('shares demo mode information with Inertia', function (): void {
+it('shares demo mode and normalized notification props with Inertia', function (): void {
     if (! class_exists(Inertia::class)) {
         $this->markTestSkipped(
             'Inertia is not installed. Install inertiajs/inertia-laravel to run this test.'
@@ -21,10 +18,13 @@ it('shares demo mode information with Inertia', function (): void {
 
     Inertia::shouldReceive('share')
         ->once()
+        ->with('demoModeNotifications', Mockery::type(Closure::class));
+
+    Inertia::shouldReceive('share')
+        ->once()
         ->with('demoMode', Mockery::type(Closure::class));
 
     $request = Request::create('/dashboard', 'GET');
-
     $middleware = app(DemoModeMiddleware::class);
 
     $response = $middleware->handle(
@@ -35,7 +35,7 @@ it('shares demo mode information with Inertia', function (): void {
     expect($response->getContent())->toBe('OK');
 });
 
-it('does not share demo mode information when disabled', function (): void {
+it('shares global notifications even when demo mode is disabled', function (): void {
     if (! class_exists(Inertia::class)) {
         $this->markTestSkipped(
             'Inertia is not installed. Install inertiajs/inertia-laravel to run this test.'
@@ -44,10 +44,15 @@ it('does not share demo mode information when disabled', function (): void {
 
     config()->set('demo-mode.enabled', false);
 
-    Inertia::shouldReceive('share')->never();
+    Inertia::shouldReceive('share')
+        ->once()
+        ->with('demoModeNotifications', Mockery::type(Closure::class));
+
+    Inertia::shouldReceive('share')
+        ->never()
+        ->with('demoMode', Mockery::type(Closure::class));
 
     $request = Request::create('/dashboard', 'GET');
-
     $middleware = app(DemoModeMiddleware::class);
 
     $response = $middleware->handle(

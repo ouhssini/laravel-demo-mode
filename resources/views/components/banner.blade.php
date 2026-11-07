@@ -1,11 +1,17 @@
 @php
     $display = config('demo-mode.display', 'both');
+    $demoModeEnabled = (bool) config('demo-mode.enabled', false);
 
-    $showBanner = in_array($display, ['banner', 'both'], true);
+    $showBanner = $demoModeEnabled && in_array($display, ['banner', 'both'], true);
     $showToast = in_array($display, ['toast', 'both'], true);
+
+    $notifications = request()->hasSession()
+        ? app(\Ouhssini\DemoMode\Support\FlashNotificationResolver::class)
+            ->resolve(request()->session())
+        : [];
 @endphp
 
-@if (config('demo-mode.enabled', false) && ($showBanner || $showToast))
+@if ($showBanner || $showToast)
 
 <style>
     /* Demo mode banner */
@@ -143,10 +149,22 @@
         color: #b45309;
     }
 
-    .demo-mode-toast__icon svg {
-        width: 19px;
-        height: 19px;
+    .demo-mode-toast__icon span {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1;
     }
+
+    .demo-mode-toast--success { border-color: #86efac; }
+    .demo-mode-toast--success .demo-mode-toast__icon { background: #dcfce7; color: #15803d; }
+    .demo-mode-toast--error { border-color: #fca5a5; }
+    .demo-mode-toast--error .demo-mode-toast__icon { background: #fee2e2; color: #b91c1c; }
+    .demo-mode-toast--warning { border-color: #fcd34d; }
+    .demo-mode-toast--warning .demo-mode-toast__icon { background: #fef3c7; color: #b45309; }
+    .demo-mode-toast--notice,
+    .demo-mode-toast--info { border-color: #93c5fd; }
+    .demo-mode-toast--notice .demo-mode-toast__icon,
+    .demo-mode-toast--info .demo-mode-toast__icon { background: #dbeafe; color: #1d4ed8; }
 
     .demo-mode-toast__content {
         min-width: 0;
@@ -203,6 +221,12 @@
         background: rgba(146, 64, 14, .3);
         color: #fbbf24;
     }
+
+    html.dark .demo-mode-toast--success .demo-mode-toast__icon { background: rgba(22, 163, 74, .2); color: #86efac; }
+    html.dark .demo-mode-toast--error .demo-mode-toast__icon { background: rgba(220, 38, 38, .2); color: #fca5a5; }
+    html.dark .demo-mode-toast--warning .demo-mode-toast__icon { background: rgba(217, 119, 6, .2); color: #fcd34d; }
+    html.dark .demo-mode-toast--notice .demo-mode-toast__icon,
+    html.dark .demo-mode-toast--info .demo-mode-toast__icon { background: rgba(37, 99, 235, .2); color: #93c5fd; }
 
     html.dark .demo-mode-toast__title {
         color: #f9fafb;
@@ -272,21 +296,8 @@
         aria-atomic="true"
         aria-hidden="true"
     >
-        <div class="demo-mode-toast__icon">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-            >
-                <path d="M12 3 2.8 19a1.7 1.7 0 0 0 1.5 2.5h15.4a1.7 1.7 0 0 0 1.5-2.5L12 3Z" />
-                <path d="M12 9v4" />
-                <path d="M12 17h.01" />
-            </svg>
+        <div class="demo-mode-toast__icon" aria-hidden="true">
+            <span id="demo-mode-toast-icon">!</span>
         </div>
 
         <div class="demo-mode-toast__content">
@@ -319,61 +330,81 @@
 
             const titleElement = document.getElementById('demo-mode-toast-title');
             const messageElement = document.getElementById('demo-mode-toast-message');
+            const iconElement = document.getElementById('demo-mode-toast-icon');
             const closeButton = document.getElementById('demo-mode-toast-close');
+            const typeIcons = {
+                success: '✓',
+                error: '×',
+                notice: 'i',
+                info: 'i',
+                warning: '!'
+            };
 
             let dismissTimeout = null;
+            let queue = [];
+            let isShowing = false;
 
             function hideToast() {
                 clearTimeout(dismissTimeout);
-
                 toast.classList.remove('is-visible');
                 toast.setAttribute('aria-hidden', 'true');
+                isShowing = false;
+
+                if (queue.length) {
+                    window.setTimeout(showNext, 220);
+                }
             }
 
-            function showToast(notice) {
-                if (!notice) {
+            function showNext() {
+                if (isShowing || queue.length === 0) {
                     return;
                 }
 
-                const title = typeof notice === 'string'
-                    ? 'Demo Mode'
-                    : notice.title || 'Demo Mode';
+                const notification = queue.shift();
+                const type = typeIcons[notification.type] ? notification.type : 'notice';
 
-                const message = typeof notice === 'string'
-                    ? notice
-                    : notice.message;
+                toast.classList.remove(
+                    'demo-mode-toast--success',
+                    'demo-mode-toast--error',
+                    'demo-mode-toast--notice',
+                    'demo-mode-toast--info',
+                    'demo-mode-toast--warning'
+                );
+                toast.classList.add(`demo-mode-toast--${type}`);
 
-                if (!message) {
-                    return;
-                }
-
-                clearTimeout(dismissTimeout);
-
-                titleElement.textContent = title;
-                messageElement.textContent = message;
+                titleElement.textContent = notification.title || type.charAt(0).toUpperCase() + type.slice(1);
+                messageElement.textContent = notification.message;
+                iconElement.textContent = typeIcons[type];
 
                 toast.setAttribute('aria-hidden', 'false');
                 toast.classList.add('is-visible');
+                isShowing = true;
+                dismissTimeout = window.setTimeout(hideToast, 4000);
+            }
 
-                dismissTimeout = setTimeout(hideToast, 4000);
+            function enqueueNotifications(notifications) {
+                if (!Array.isArray(notifications)) {
+                    return;
+                }
+
+                notifications.forEach((notification) => {
+                    if (notification && typeof notification.message === 'string' && notification.message.trim()) {
+                        queue.push(notification);
+                    }
+                });
+
+                showNext();
             }
 
             closeButton.addEventListener('click', hideToast);
 
-            // Traditional browser form submissions.
-            const initialNotice = @json(session('demo_mode_notice'));
+            // Full-page requests: notifications are read directly from the session.
+            enqueueNotifications(@json($notifications));
 
-            if (initialNotice) {
-                showToast(initialNotice);
-            }
-
-            // Inertia navigation events.
+            // Inertia visits: the middleware shares normalized session notifications.
             document.addEventListener('inertia:navigate', (event) => {
-                const notice = event.detail?.page?.props?.demoMode?.notice;
-
-                if (notice) {
-                    showToast(notice);
-                }
+                const notifications = event.detail?.page?.props?.demoModeNotifications;
+                enqueueNotifications(notifications);
             });
         })();
     </script>
