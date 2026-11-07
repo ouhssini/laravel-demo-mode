@@ -1,11 +1,38 @@
+
 <?php
 
 return [
-    /* Enable demo mode using DEMO_MODE=true in your .env file. */
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Mode
+    |--------------------------------------------------------------------------
+    */
+
     'enabled' => env('DEMO_MODE', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification Display
+    |--------------------------------------------------------------------------
+    |
+    | Available modes:
+    | - banner: Show the persistent top banner.
+    | - toast: Show only temporary notifications.
+    | - both: Show the banner and temporary notifications.
+    |
+    */
+
+    'display' => env('DEMO_MODE_DISPLAY', 'both'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Banner
+    |--------------------------------------------------------------------------
+    */
 
     'banner' => [
         'title' => env('DEMO_MODE_BANNER_TITLE', 'Demo Environment'),
+
         'message' => env(
             'DEMO_MODE_BANNER_MESSAGE',
             'This is a demo version. Changes are disabled.'
@@ -13,23 +40,36 @@ return [
     ],
 
     /*
-     * Safe HTTP methods are always allowed. These paths are also allowed
-     * to use modifying methods. Use Laravel request path patterns.
-     * Examples: login, logout, webhook/*
-     */
+    |--------------------------------------------------------------------------
+    | Allowed Paths
+    |--------------------------------------------------------------------------
+    */
+
     'allowed_paths' => [
         'login',
         'logout',
     ],
 
-    /* Route names are checked when Laravel has already resolved the route. */
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Routes
+    |--------------------------------------------------------------------------
+    */
+
     'allowed_routes' => [
         'login',
         'logout',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Blocked Request Response
+    |--------------------------------------------------------------------------
+    */
+
     'response' => [
         'status' => 403,
+
         'message' => 'Demo mode is enabled. Changes are not allowed.',
     ],
 ];

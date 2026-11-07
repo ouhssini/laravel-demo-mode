@@ -1,3 +1,4 @@
+
 <?php
 
 declare(strict_types=1);
@@ -21,9 +22,15 @@ class DemoModeServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'demo-mode');
+        $this->loadViewsFrom(
+            __DIR__.'/../resources/views',
+            'demo-mode'
+        );
 
-        Blade::component('demo-mode::components.banner', 'demo-mode-banner');
+        Blade::component(
+            'demo-mode::components.banner',
+            'demo-mode-banner'
+        );
 
         $this->publishes([
             __DIR__.'/../config/demo-mode.php' => config_path('demo-mode.php'),
@@ -33,12 +40,14 @@ class DemoModeServiceProvider extends ServiceProvider
             __DIR__.'/../resources/views' => resource_path('views/vendor/demo-mode'),
         ], 'demo-mode-views');
 
-        // Register globally so both web and API requests are protected.
         $this->app->booted(function (): void {
             $kernel = $this->app->make(HttpKernel::class);
 
-            if (method_exists($kernel, 'pushMiddleware')) {
-                $kernel->pushMiddleware(DemoModeMiddleware::class);
+            if (method_exists($kernel, 'appendMiddlewareToGroup')) {
+                $kernel->appendMiddlewareToGroup(
+                    'web',
+                    DemoModeMiddleware::class
+                );
             }
         });
     }
