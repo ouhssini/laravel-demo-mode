@@ -111,6 +111,18 @@ DEMO_MODE_DISPLAY=both
 
 The banner communicates that the application is running in demo mode. Toast notifications provide immediate feedback when a user attempts an action that is blocked.
 
+**Banner** — persistent top bar shown while demo mode is active:
+
+<p align="center">
+  <img src="banner.png" alt="Demo mode banner" width="720" />
+</p>
+
+**Toast** — temporary notification shown when a write request is blocked:
+
+<p align="center">
+  <img src="toast_error.png" alt="Demo mode blocked-request toast" width="720" />
+</p>
+
 ## Add the Blade component
 
 The notification component is opt-in. Add it once to your main Blade root view, usually `resources/views/app.blade.php`, inside the `<body>` element and before the Inertia root element. This is the only component you need to add; you do not need to change controllers, existing flash calls, React components, or toast libraries:
@@ -275,6 +287,10 @@ To allow only specific operations by name, list each route name explicitly in `a
 ### Exclude paths from demo access
 
 Use `excluded_paths` to completely hide pages from demo users — regardless of HTTP method. Any request to an excluded path is redirected to a built-in "page not available" screen with a back button.
+
+<p align="center">
+  <img src="restricted_page.png" alt="Demo mode restricted page" width="720" />
+</p>
 
 ```php
 'excluded_paths' => [
