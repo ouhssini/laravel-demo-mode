@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ouhssini\DemoMode;
 
-use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -47,15 +46,22 @@ class DemoModeServiceProvider extends ServiceProvider
             __DIR__.'/../resources/views' => resource_path('views/vendor/demo-mode'),
         ], 'demo-mode-views');
 
+        // Register middleware in the web group.
+        // Use the kernel's appendMiddlewareToGroup when available (Laravel 10
+        // and apps that kept the Http Kernel), otherwise fall back to the
+        // Router's pushMiddlewareToGroup (Laravel 11+, slim app structure).
         $this->app->booted(function (): void {
-            $kernel = $this->app->make(HttpKernel::class);
+            if ($this->app->bound(\Illuminate\Contracts\Http\Kernel::class)) {
+                $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
 
-            if (method_exists($kernel, 'appendMiddlewareToGroup')) {
-                $kernel->appendMiddlewareToGroup(
-                    'web',
-                    DemoModeMiddleware::class
-                );
+                if (method_exists($kernel, 'appendMiddlewareToGroup')) {
+                    $kernel->appendMiddlewareToGroup('web', DemoModeMiddleware::class);
+
+                    return;
+                }
             }
+
+            $this->app['router']->pushMiddlewareToGroup('web', DemoModeMiddleware::class);
         });
     }
 }

@@ -46,7 +46,7 @@ abstract class TestCase extends OrchestraTestCase
         config()->set('demo-mode.allowed_paths', []);
         config()->set('demo-mode.allowed_routes', []);
 
-        Route::middleware('web')->group(function (): void {
+        Route::middleware(['web', \Ouhssini\DemoMode\Http\Middleware\DemoModeMiddleware::class])->group(function (): void {
             Route::get('/_demo-mode/read', fn () => response('read'))
                 ->name('demo-mode.test.read');
 
