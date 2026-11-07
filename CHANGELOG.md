@@ -15,6 +15,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Support for `success`, `error`, `notice`, `warning`, and `info` flash types.
 - Support for direct flash keys, typed `flash` arrays, and structured flash notification arrays.
 - A configurable `response.flash_type` (and `DEMO_MODE_FLASH_TYPE` env variable) for the conventional Laravel session flash key used when a browser request is blocked.
+- `excluded_paths` configuration: path patterns that redirect all requests (including GET) to a built-in restricted page with a back button.
+- `excluded_response.title` and `excluded_response.message` configuration (and `DEMO_MODE_EXCLUDED_TITLE` / `DEMO_MODE_EXCLUDED_MESSAGE` env variables) to customize the restricted page content.
+- A self-contained restricted page view (`resources/views/restricted.blade.php`) with dark-mode support, publishable via the `demo-mode-views` tag.
 - Persistent Blade banner for demo-mode status.
 - Flash notification support for blocked browser and Inertia requests using conventional session keys.
 - Configurable banner title and message.

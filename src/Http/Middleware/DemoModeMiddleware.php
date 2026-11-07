@@ -18,6 +18,17 @@ class DemoModeMiddleware
             return $next($request);
         }
 
+        // Always allow the package's own restricted page through so it can render.
+        if ($request->routeIs('demo-mode.restricted')) {
+            return $next($request);
+        }
+
+        // Excluded paths are hidden from demo users entirely — any HTTP method,
+        // including safe ones, is redirected to the restricted page.
+        if ($this->isExcludedPath($request)) {
+            return $this->handleExcludedPath($request);
+        }
+
         if (in_array($request->method(), self::SAFE_METHODS, true)) {
             return $next($request);
         }
@@ -27,6 +38,31 @@ class DemoModeMiddleware
         }
 
         return $this->handleBlockedRequest($request);
+    }
+
+    /**
+     * Redirect excluded-path requests to the restricted page.
+     */
+    private function handleExcludedPath(Request $request): Response
+    {
+        // JSON / API callers get a structured error instead of a redirect.
+        if (
+            $request->expectsJson()
+            || $request->wantsJson()
+            || $request->is('api/*')
+        ) {
+            $status = (int) config('demo-mode.response.status', 403);
+
+            return response()->json([
+                'message' => (string) config(
+                    'demo-mode.excluded_response.message',
+                    'This page is not available in the demo.'
+                ),
+                'demo_mode' => true,
+            ], $status);
+        }
+
+        return redirect()->route('demo-mode.restricted');
     }
 
     /**
@@ -62,6 +98,20 @@ class DemoModeMiddleware
         return redirect()
             ->back(303)
             ->with($flashType, $message);
+    }
+
+    /**
+     * Check whether the request path is excluded from demo access.
+     */
+    private function isExcludedPath(Request $request): bool
+    {
+        foreach (config('demo-mode.excluded_paths', []) as $pattern) {
+            if ($request->is($pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

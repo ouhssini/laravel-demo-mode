@@ -18,6 +18,7 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 - Read-only demo mode for Laravel applications.
 - Blocks modifying HTTP methods while allowing safe methods.
 - Configurable allowed paths and named routes.
+- Excluded paths redirected to a built-in restricted page (blocks all HTTP methods, including GET).
 - Configurable JSON response status and message.
 - Browser and Inertia redirects with flash notifications.
 - Three notification display modes: banner, toast, or both.
@@ -210,36 +211,128 @@ config/demo-mode.php
 | `banner.message` | Banner description. |
 | `allowed_paths` | Request path patterns exempt from write blocking. |
 | `allowed_routes` | Route names exempt from write blocking when a route is available to the middleware. |
+| `excluded_paths` | Request path patterns redirected to the restricted page for all HTTP methods (including GET). Wildcard `*` supported. |
+| `excluded_response.title` | Title shown on the restricted page. Settable via `DEMO_MODE_EXCLUDED_TITLE`. |
+| `excluded_response.message` | Message shown on the restricted page. Settable via `DEMO_MODE_EXCLUDED_MESSAGE`. |
 | `response.status` | HTTP status returned for blocked JSON requests. Defaults to `403`. |
 | `response.message` | Message returned for blocked requests. |
 | `response.flash_type` | Laravel session flash key used for blocked browser requests. Defaults to `error`. Settable via `DEMO_MODE_FLASH_TYPE`. |
 
 ### Allow specific paths
 
-You can configure paths that should bypass demo-mode write protection in `config/demo-mode.php`:
+`allowed_paths` matches against the **URL path string** using Laravel's `$request->is()`, which supports `*` as a wildcard.
 
 ```php
 'allowed_paths' => [
-    'login',
-    'logout',
-    'webhooks/provider',
+    'login',          // matches /login exactly
+    'logout',         // matches /logout exactly
+    'webhooks/stripe', // matches /webhooks/stripe exactly
+    'webhooks/*',     // matches /webhooks/anything
 ],
 ```
 
-Path patterns use Laravel's request path matching. For example, `webhooks/*` can allow a group of matching paths.
+A pattern without a wildcard is an exact match. `'customers'` allows `POST /customers` but still blocks `POST /customers/1` and `POST /customers/create`. Use `'customers/*'` to allow the whole sub-tree.
+
+Path matching runs before route resolution, so it works even when no named route is matched yet.
 
 **Use exceptions carefully:** modifying requests matching an allowed path will pass through the demo-mode protection.
 
-You can also allow specific named routes:
+### Allow specific named routes
+
+`allowed_routes` matches against the **route name** using a strict exact-string comparison (`in_array`). There is no wildcard support.
 
 ```php
 'allowed_routes' => [
-    'demo.webhook',
-    'demo.logout',
+    'login',
+    'logout',
+    'customers.store',   // exact route name only
+    'customers.update',
+    'customers.destroy',
 ],
 ```
 
-Route names are checked when Laravel has resolved the route. Path exceptions are more reliable when middleware runs before route resolution.
+A value like `'customers.*'` will never match anything — `in_array` performs no glob or pattern expansion. Only routes whose name is exactly that string will be allowed.
+
+Route names are only available after Laravel resolves the route. Path exceptions are more reliable when the middleware runs before route resolution.
+
+### Choosing between paths and routes
+
+| | `allowed_paths` | `allowed_routes` |
+|---|---|---|
+| Matches against | URL path string | Route name (exact string) |
+| Wildcard `*` support | ✅ Yes | ❌ No |
+| Requires resolved route | ❌ No | ✅ Yes |
+| Single entry covers sub-paths | Use `prefix/*` | List each route name |
+
+To allow all write operations under a URL prefix, `allowed_paths` with a wildcard is simpler:
+
+```php
+'allowed_paths' => ['customers/*'],
+```
+
+To allow only specific operations by name, list each route name explicitly in `allowed_routes`.
+
+### Exclude paths from demo access
+
+Use `excluded_paths` to completely hide pages from demo users — regardless of HTTP method. Any request to an excluded path is redirected to a built-in "page not available" screen with a back button.
+
+```php
+'excluded_paths' => [
+    'settings',    // hides /settings
+    'settings/*',  // hides /settings and everything under it
+    'account',     // hides /account
+    'account/*',
+],
+```
+
+Wildcard `*` patterns work the same way as in `allowed_paths`. An excluded path check runs before the safe-method check, so GET requests are blocked too — not just writes.
+
+**Excluded paths take priority over allowed paths.** If a path appears in both lists, it will be blocked.
+
+#### Customize the restricted page message
+
+Set the title and message through your `.env` file:
+
+```env
+DEMO_MODE_EXCLUDED_TITLE="Not Available"
+DEMO_MODE_EXCLUDED_MESSAGE="This page is not available in the demo version."
+```
+
+Or publish the config and set them directly:
+
+```php
+'excluded_response' => [
+    'title'   => 'Not Available',
+    'message' => 'This page is not available in the demo version.',
+],
+```
+
+#### Customize the restricted page view
+
+The restricted page is part of the published views. Publish them to customize its markup and styling:
+
+```bash
+php artisan vendor:publish --tag=demo-mode-views
+```
+
+The view is published to:
+
+```text
+resources/views/vendor/demo-mode/restricted.blade.php
+```
+
+#### API and JSON requests
+
+Excluded paths return a JSON error response instead of a redirect when the request expects JSON:
+
+```json
+{
+    "message": "This page is not available in the demo.",
+    "demo_mode": true
+}
+```
+
+The status code is the same as `response.status` (default `403`).
 
 ## Protection behavior
 
@@ -247,6 +340,7 @@ When demo mode is enabled:
 
 - `GET`, `HEAD`, and `OPTIONS` requests are allowed.
 - Other HTTP methods, including `POST`, `PUT`, `PATCH`, and `DELETE`, are blocked by default.
+- Requests matching configured excluded paths are redirected to the restricted page (all methods, including GET).
 - Requests matching configured allowed paths are allowed.
 - Configured allowed route names are checked when a route is available.
 - Browser and Inertia requests are redirected back with a conventional session flash notification.

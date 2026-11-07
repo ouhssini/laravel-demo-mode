@@ -6,6 +6,7 @@ namespace Ouhssini\DemoMode;
 
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Ouhssini\DemoMode\Http\Middleware\DemoModeMiddleware;
 
@@ -30,6 +31,13 @@ class DemoModeServiceProvider extends ServiceProvider
             'demo-mode::components.banner',
             'demo-mode-banner'
         );
+
+        // Internal route that renders the restricted-page view.
+        // Excluded as a path itself so it is never blocked by its own check.
+        Route::get('/_demo-mode/restricted', function () {
+            return response()->view('demo-mode::restricted', [], 403);
+        })->name('demo-mode.restricted')
+          ->middleware('web');
 
         $this->publishes([
             __DIR__.'/../config/demo-mode.php' => config_path('demo-mode.php'),

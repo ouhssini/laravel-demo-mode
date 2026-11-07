@@ -63,6 +63,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Excluded Paths
+    |--------------------------------------------------------------------------
+    |
+    | Paths listed here are completely hidden from demo users. Any request —
+    | regardless of HTTP method — matching one of these patterns will be
+    | redirected to a "page not available" screen with a back button.
+    |
+    | Patterns use Laravel's $request->is() wildcard syntax:
+    |   'settings'    — matches /settings exactly
+    |   'settings/*'  — matches /settings/anything
+    |   'account'     — matches /account exactly
+    |
+    */
+
+    'excluded_paths' => [
+        // 'settings',
+        // 'settings/*',
+        // 'account',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Excluded Path Response
+    |--------------------------------------------------------------------------
+    */
+
+    'excluded_response' => [
+        'title'   => env('DEMO_MODE_EXCLUDED_TITLE', 'Page Not Available'),
+        'message' => env(
+            'DEMO_MODE_EXCLUDED_MESSAGE',
+            'This page is not available in the demo.'
+        ),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Blocked Request Response
     |--------------------------------------------------------------------------
     */
