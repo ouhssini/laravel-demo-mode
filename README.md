@@ -1,5 +1,6 @@
 # Laravel Demo Mode
 
+[![Tests](https://img.shields.io/github/actions/workflow/status/ouhssini/laravel-demo-mode/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ouhssini/laravel-demo-mode/actions/workflows/tests.yml)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/ouhssini/laravel-demo-mode.svg?style=flat-square)](https://packagist.org/packages/ouhssini/laravel-demo-mode)
 [![Total Downloads](https://img.shields.io/packagist/dt/ouhssini/laravel-demo-mode.svg?style=flat-square)](https://packagist.org/packages/ouhssini/laravel-demo-mode)
 [![License](https://img.shields.io/packagist/l/ouhssini/laravel-demo-mode.svg?style=flat-square)](LICENSE)
