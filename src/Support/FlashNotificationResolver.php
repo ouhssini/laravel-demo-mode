@@ -53,13 +53,6 @@ class FlashNotificationResolver
             }
         }
 
-        // Internal notification generated when demo-mode blocks a request.
-        $demoNotice = $session->get('demo_mode_notice');
-
-        if ($demoNotice !== null) {
-            $this->append($notifications, $demoNotice, 'notice', 'Demo Mode');
-        }
-
         // Avoid duplicate messages when an application exposes the same flash
         // through more than one convention.
         $unique = [];

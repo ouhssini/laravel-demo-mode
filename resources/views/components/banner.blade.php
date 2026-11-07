@@ -400,12 +400,6 @@
 
             // Full-page requests: notifications are read directly from the session.
             enqueueNotifications(@json($notifications));
-
-            // Inertia visits: the middleware shares normalized session notifications.
-            document.addEventListener('inertia:navigate', (event) => {
-                const notifications = event.detail?.page?.props?.demoModeNotifications;
-                enqueueNotifications(notifications);
-            });
         })();
     </script>
 @endif

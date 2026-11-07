@@ -105,3 +105,24 @@ it('does not render toast markup in banner-only display mode', function (): void
         ->toContain('class="demo-mode-banner"')
         ->not->toContain('id="demo-mode-toast"');
 });
+
+it('renders the blocked-request notification from the conventional flash key', function (): void {
+    config()->set('demo-mode.enabled', true);
+    config()->set('demo-mode.display', 'toast');
+
+    session()->flash('error', 'Demo mode is enabled. Changes are not allowed.');
+
+    $html = renderDemoModeBanner();
+
+    expect($html)
+        ->toContain('id="demo-mode-toast"')
+        ->toContain('Demo mode is enabled. Changes are not allowed.');
+});
+
+it('does not reference a custom demoModeNotifications Inertia prop', function (): void {
+    config()->set('demo-mode.display', 'toast');
+
+    $html = renderDemoModeBanner();
+
+    expect($html)->not->toContain('demoModeNotifications');
+});

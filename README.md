@@ -4,7 +4,11 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/ouhssini/laravel-demo-mode.svg?style=flat-square)](https://packagist.org/packages/ouhssini/laravel-demo-mode)
 [![License](https://img.shields.io/packagist/l/ouhssini/laravel-demo-mode.svg?style=flat-square)](LICENSE)
 
-A lightweight Laravel package that enables a read-only demo environment. It blocks modifying HTTP requests and provides optional demo notifications through a Blade banner and toast messages. It also shares demo information with Inertia when available.
+<p align="center">
+  <img src="Laravel-demo-banner.png" alt="Laravel Demo Mode banner" width="720" />
+</p>
+
+A lightweight Laravel package that enables a read-only demo environment. It blocks modifying HTTP requests and provides optional demo notifications through a Blade banner and toast messages. Blocked requests are flashed using conventional Laravel session keys so existing notification display implementations can surface them.
 
 - **Packagist:** https://packagist.org/packages/ouhssini/laravel-demo-mode
 - **GitHub:** https://github.com/ouhssini/laravel-demo-mode
@@ -20,7 +24,7 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 - Global Blade toast renderer for common Laravel flash-message conventions.
 - Supports `success`, `error`, `notice`, `warning`, and `info` notifications.
 - Supports both direct flash keys and nested `flash` arrays.
-- Optional Inertia shared props for toast notifications during client-side navigation.
+- Blocked requests flash a conventional, configurable Laravel session message.
 - Self-contained Blade component with its own CSS and JavaScript.
 - Laravel package auto-discovery.
 
@@ -29,7 +33,7 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 - PHP 8.2 or later for Laravel 11 and 12.
 - PHP 8.3 or later for Laravel 13.
 - Laravel 11, 12, or 13.
-- Inertia.js is optional. It is only needed if you want the package to expose demo-mode state and flash notifications during Inertia client-side navigation.
+- Inertia.js is optional. The package does not require or inject Inertia props; it uses standard Laravel session flashing so applications can display blocked-request notifications through their existing implementation.
 
 ## Installation
 
@@ -164,7 +168,7 @@ return back()->with('flash', [
 
 Supported notification types are `success`, `error`, `notice`, `warning`, and `info`. Existing flash conventions are preserved: the package reads and normalizes them but does not replace your application's `flash` session key or require you to change your controllers.
 
-For Inertia client-side navigation, the package shares a separate `demoModeNotifications` prop internally. The Blade component listens for Inertia navigation and renders the same notifications. Your existing `flash` prop and frontend notification implementation are not overwritten.
+When a request is blocked, the package flashes the configured message under a conventional session key (default `error`, configurable via `response.flash_type`). It does not inject custom Inertia props. Applications that share the corresponding flash key with Inertia through their own `HandleInertiaRequests` middleware will display the notification using their existing implementation. The standalone Blade toast remains independently functional where the display mode includes `toast`.
 
 ### Customize the Blade view (optional)
 
@@ -208,6 +212,7 @@ config/demo-mode.php
 | `allowed_routes` | Route names exempt from write blocking when a route is available to the middleware. |
 | `response.status` | HTTP status returned for blocked JSON requests. Defaults to `403`. |
 | `response.message` | Message returned for blocked requests. |
+| `response.flash_type` | Laravel session flash key used for blocked browser requests. Defaults to `error`. Settable via `DEMO_MODE_FLASH_TYPE`. |
 
 ### Allow specific paths
 
@@ -244,7 +249,7 @@ When demo mode is enabled:
 - Other HTTP methods, including `POST`, `PUT`, `PATCH`, and `DELETE`, are blocked by default.
 - Requests matching configured allowed paths are allowed.
 - Configured allowed route names are checked when a route is available.
-- Browser and Inertia requests are redirected back with a flash notification.
+- Browser and Inertia requests are redirected back with a conventional session flash notification.
 - API and JSON requests receive a JSON error response.
 - The middleware is automatically registered in the `web` middleware group.
 
@@ -267,27 +272,25 @@ To protect API routes too, register `Ouhssini\DemoMode\Http\Middleware\DemoModeM
 
 API and JSON requests receive the configured JSON error response rather than a browser redirect.
 
-## Inertia shared props
+## Inertia and flash notifications
 
-If Inertia is installed, the middleware shares a `demoMode` prop while demo mode is enabled and a separate `demoModeNotifications` prop for the Blade toast renderer. These props are package-managed; you do not need to add or rename any flash keys in your application:
+The package does not inject custom Inertia props and does not require changes to your `HandleInertiaRequests` middleware. When a browser request is blocked, it flashes the configured message under a conventional Laravel session key so your application's existing notification architecture can surface it.
 
-```ts
-{
-    demoMode: {
-        enabled: true,
-        display: 'both',
-        title: 'DEMO ENVIRONMENT',
-        message: 'Read-only access — modifications are disabled.',
-        notice: null,
-    }
-}
+The default flash key is `error`. Change it with `response.flash_type` (or the `DEMO_MODE_FLASH_TYPE` environment variable) to match whatever key your application already shares with Inertia:
+
+```php
+// config/demo-mode.php
+'response' => [
+    'flash_type' => env('DEMO_MODE_FLASH_TYPE', 'error'),
+],
 ```
 
-The `display` value reflects the configured notification mode.
+How the notification reaches your Inertia frontend depends on how your application already shares session flash data:
 
-The legacy `notice` property contains the flash notification for a blocked demo-mode action. The separate `demoModeNotifications` prop contains normalized notifications detected from the common session flash conventions. The package does not replace an application's existing `flash` shared prop.
+- If your `HandleInertiaRequests` middleware shares individual keys (for example `error`), the blocked-request message is available through that prop on the next render.
+- If your application shares a nested `flash` object, set `DEMO_MODE_FLASH_TYPE` to a key your sharing logic reads, or extend your sharing to include the configured key.
 
-You can use `demoMode.enabled` in your React components to hide or disable create, edit, and delete controls for a clearer read-only user experience.
+The package cannot automatically know how every application shares flash messages with Inertia. It flashes conventionally and relies on your existing implementation to display it. The standalone Blade toast (`<x-demo-mode-banner />`) reads common session flash conventions directly and remains independently functional where the display mode includes `toast`, regardless of Inertia.
 
 Frontend controls are only a usability improvement. The server-side middleware is the enforcement layer and must remain enabled.
 

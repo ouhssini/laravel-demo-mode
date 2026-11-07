@@ -16,14 +16,11 @@ beforeEach(function (): void {
         ]));
 });
 
-it('redirects browser requests back with a flash notice', function (): void {
+it('redirects browser requests back with a conventional flash message', function (): void {
     $this->from('/dashboard')
         ->post('/_demo-mode/write')
         ->assertRedirect('/dashboard')
-        ->assertSessionHas('demo_mode_notice', [
-            'title' => 'Demo Mode',
-            'message' => 'Demo mode is enabled. Changes are not allowed.',
-        ]);
+        ->assertSessionHas('error', 'Demo mode is enabled. Changes are not allowed.');
 });
 
 it('returns JSON for JSON requests', function (): void {

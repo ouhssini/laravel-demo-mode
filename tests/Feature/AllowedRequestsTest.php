@@ -46,5 +46,5 @@ it('blocks requests that are not whitelisted', function (): void {
     $this->from('/previous-page')
         ->post('/_demo-mode/write')
         ->assertRedirect('/previous-page')
-        ->assertSessionHas('demo_mode_notice');
+        ->assertSessionHas('error');
 });

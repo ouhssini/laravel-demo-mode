@@ -27,7 +27,7 @@ it('blocks POST requests in demo mode', function (): void {
     $this->from('/previous-page')
         ->post('/_demo-mode/write')
         ->assertRedirect('/previous-page')
-        ->assertSessionHas('demo_mode_notice');
+        ->assertSessionHas('error');
 });
 
 it('blocks PUT requests in demo mode', function (): void {

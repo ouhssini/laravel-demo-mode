@@ -65,17 +65,24 @@ it('resolves structured flash notification arrays', function (): void {
     ]);
 });
 
-it('resolves the package demo mode notice', function (): void {
+it('resolves the info flash key', function (): void {
     $notifications = resolveFlashNotifications([
-        'demo_mode_notice' => [
-            'title' => 'Demo Mode',
-            'message' => 'Changes are not allowed.',
-        ],
+        'info' => 'For your information.',
     ]);
 
     expect($notifications)->toBe([
-        ['type' => 'notice', 'title' => 'Demo Mode', 'message' => 'Changes are not allowed.'],
+        ['type' => 'info', 'title' => 'Info', 'message' => 'For your information.'],
     ]);
+});
+
+it('deduplicates notifications present through multiple conventions', function (): void {
+    $notifications = resolveFlashNotifications([
+        'success' => 'Saved successfully.',
+        'flash' => ['success' => 'Saved successfully.'],
+    ]);
+
+    expect($notifications)->toHaveCount(1)
+        ->and($notifications[0]['message'])->toBe('Saved successfully.');
 });
 
 it('ignores empty or unsupported flash values', function (): void {

@@ -6,8 +6,6 @@ namespace Ouhssini\DemoMode\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Ouhssini\DemoMode\Support\FlashNotificationResolver;
 use Symfony\Component\HttpFoundation\Response;
 
 class DemoModeMiddleware
@@ -16,10 +14,6 @@ class DemoModeMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        // Share normal application flash messages even when demo mode is off.
-        // This allows the Blade component to act as a global toast renderer.
-        $this->shareInertiaProps($request);
-
         if (! config('demo-mode.enabled', false)) {
             return $next($request);
         }
@@ -33,40 +27,6 @@ class DemoModeMiddleware
         }
 
         return $this->handleBlockedRequest($request);
-    }
-
-    /**
-     * Share normalized flash notifications with Inertia without replacing the
-     * application's own `flash` prop or requiring a specific flash convention.
-     */
-    private function shareInertiaProps(Request $request): void
-    {
-        if (! class_exists(Inertia::class)) {
-            return;
-        }
-
-        Inertia::share('demoModeNotifications', function () use ($request): array {
-            if (! $request->hasSession()) {
-                return [];
-            }
-
-            return app(FlashNotificationResolver::class)
-                ->resolve($request->session());
-        });
-
-        if (! config('demo-mode.enabled', false)) {
-            return;
-        }
-
-        Inertia::share('demoMode', fn () => [
-            'enabled' => true,
-            'display' => config('demo-mode.display', 'both'),
-            'title' => config('demo-mode.banner.title'),
-            'message' => config('demo-mode.banner.message'),
-            'notice' => $request->hasSession()
-                ? $request->session()->get('demo_mode_notice')
-                : null,
-        ]);
     }
 
     /**
@@ -93,13 +53,15 @@ class DemoModeMiddleware
             ], $status);
         }
 
-        // Browser and Inertia requests return to the previous page.
+        // Browser and Inertia requests return to the previous page with a
+        // conventional Laravel session flash message. Applications can display
+        // the notification through their existing flash-sharing implementation
+        // without the package injecting a custom prop.
+        $flashType = (string) config('demo-mode.response.flash_type', 'error');
+
         return redirect()
             ->back(303)
-            ->with('demo_mode_notice', [
-                'title' => 'Demo Mode',
-                'message' => $message,
-            ]);
+            ->with($flashType, $message);
     }
 
     /**

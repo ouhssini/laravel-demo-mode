@@ -14,10 +14,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A global Blade toast renderer that automatically detects common Laravel flash notifications.
 - Support for `success`, `error`, `notice`, `warning`, and `info` flash types.
 - Support for direct flash keys, typed `flash` arrays, and structured flash notification arrays.
-- A normalized `demoModeNotifications` Inertia prop for client-side navigation without replacing the application's existing `flash` prop.
+- A configurable `response.flash_type` (and `DEMO_MODE_FLASH_TYPE` env variable) for the conventional Laravel session flash key used when a browser request is blocked.
 - Persistent Blade banner for demo-mode status.
-- Optional Inertia shared props containing demo-mode information.
-- Flash notification support for blocked browser and Inertia requests.
+- Flash notification support for blocked browser and Inertia requests using conventional session keys.
 - Configurable banner title and message.
 - Configurable blocked-request response status and message.
 - Configurable allowed request paths and named routes.
@@ -30,8 +29,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Browser and Inertia requests receive a redirect with a flash notification instead of a full-page error response.
 - Demo notifications are controlled through a single display configuration.
 - The existing Blade component also renders application flash notifications when toast display is enabled, even if demo mode itself is disabled.
-- Inertia notification sharing is performed independently of demo-mode protection so ordinary application notifications can be rendered during client-side navigation.
+- Blocked browser requests now flash a conventional session message (default `error`, configurable via `response.flash_type`) instead of an internal `demo_mode_notice` key.
+- The standalone Blade toast resolves multiple common Laravel flash conventions and deduplicates notifications surfaced through more than one convention.
 - Middleware registration is scoped to Laravel's `web` middleware group.
+
+### Removed
+
+- Custom `demoModeNotifications` and `demoMode` Inertia shared props. The package no longer injects Inertia props, reads a custom prop during client-side navigation, or requires changes to the application's `HandleInertiaRequests` middleware.
+- The internal `demo_mode_notice` session flash key. Blocked requests now use a conventional, configurable flash key that existing notification implementations can consume directly.
 
 ### Security
 

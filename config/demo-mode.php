@@ -71,5 +71,19 @@ return [
         'status' => 403,
 
         'message' => 'Demo mode is enabled. Changes are not allowed.',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Blocked-Request Flash Type
+        |--------------------------------------------------------------------------
+        |
+        | The Laravel session flash key used when a browser request is blocked.
+        | This is a conventional key (e.g. "error", "warning", "notice", "info")
+        | so applications can display the notification through their existing
+        | flash-sharing implementation without a custom prop. Defaults to "error".
+        |
+        */
+
+        'flash_type' => env('DEMO_MODE_FLASH_TYPE', 'error'),
     ],
 ];
