@@ -32,8 +32,7 @@ A lightweight Laravel package that enables a read-only demo environment. It bloc
 
 ## Requirements
 
-- PHP 8.2 or later for Laravel 11 and 12.
-- PHP 8.3 or later for Laravel 13.
+- PHP 8.2 or later.
 - Laravel 11, 12, or 13.
 - Inertia.js is optional. The package does not require or inject Inertia props; it uses standard Laravel session flashing so applications can display blocked-request notifications through their existing implementation.
 
