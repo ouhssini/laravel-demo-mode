@@ -1,0 +1,47 @@
+```gitignore
+# Dependencies
+/vendor/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# PHPUnit / Pest
+.phpunit.cache/
+.phpunit.result.cache
+.phpunit-watcher.yml
+
+# Coverage reports
+/coverage/
+/clover.xml
+/coverage.xml
+
+# Laravel / Testbench generated files
+/bootstrap/cache/
+/storage/framework/
+/storage/logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+
+# Build artifacts
+/build/
+/dist/

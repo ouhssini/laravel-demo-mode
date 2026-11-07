@@ -14,11 +14,25 @@
             "Ouhssini\\DemoMode\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Ouhssini\\DemoMode\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [
                 "Ouhssini\\DemoMode\\DemoModeServiceProvider"
             ]
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "^5.3",
+        "orchestra/testbench": "^11.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
         }
     }
 }
