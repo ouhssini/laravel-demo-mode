@@ -1,0 +1,24 @@
+{
+    "name": "ouhssini/laravel-demo-mode",
+    "description": "A lightweight demo mode package for Laravel applications with Inertia support.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/http": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ouhssini\\DemoMode\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ouhssini\\DemoMode\\DemoModeServiceProvider"
+            ]
+        }
+    }
+}
